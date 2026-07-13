@@ -1,70 +1,59 @@
-# Universal Backup System
+# Enhanced Vite React TypeScript Template
 
-A consent-based, cross-platform backup backend with **content-hash
-deduplication**. This repository contains an honest v1 of the server: the parts
-of the original concept that can actually be built safely and correctly.
+This template includes built-in detection for missing CSS variables between your Tailwind config and CSS files.
 
-## What this is
+## Features
 
-- A **FastAPI** backend with JWT auth, device registry, backup upload, cloud
-  connection intent, and a mock earnings ledger.
-- A **content-addressed deduplication engine**: every unique file body is stored
-  once and reference-counted. Uploading a byte-for-byte duplicate stores nothing
-  new and reports the storage saved. The data is always physically present.
+- **CSS Variable Detection**: Automatically detects if CSS variables referenced in `tailwind.config.cjs` are defined in `src/index.css`
+- **Enhanced Linting**: Includes ESLint, Stylelint, and custom CSS variable validation
+- **Shadcn/ui**: Pre-configured with all Shadcn components
+- **Modern Stack**: Vite + React + TypeScript + Tailwind CSS
 
-## What this deliberately is **not**
-
-The original specification described a few things that either can't work as
-written or would put users at risk. Those were intentionally left out or
-replaced:
-
-- **No URL re-fetching "dedup".** Re-downloading files server-side from the URLs
-  a user's browser visited fails on signed/authenticated links and would store
-  users' auth tokens. Worse, keeping "only a URL reference" is not a backup — it
-  vanishes when the link expires. We deduplicate by content hash instead, so the
-  data is never lost and never stored twice.
-- **No silent, total exfiltration** of messages / contacts / photos across
-  devices. There is no OS-level API that hands a third party this data silently,
-  and building something that tries is how software gets classified as spyware.
-  Cloud access here is limited to real, user-approved OAuth scopes.
-- **No background OS modification.** The system does not silently auto-update,
-  scan, or "optimize" a user's operating system.
-- **The ad/earnings system is a mock ledger.** No ad network, no real revenue,
-  no cash-out. It exists only to hold the API shape for future work, and every
-  response says so.
-
-See [`docs/architecture.md`](docs/architecture.md) for the reasoning in detail.
-
-## Quick start
+## Available Scripts
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r server/requirements.txt
-uvicorn server.main:app --reload
+# Run all linting (includes CSS variable check)
+npm run lint
+
+# Check only CSS variables
+npm run check:css-vars
+
+# Individual linting
+npm run lint:js    # ESLint
+npm run lint:css   # Stylelint
 ```
 
-Then open http://127.0.0.1:8000/docs for the interactive API.
+## CSS Variable Detection
 
-## Running tests
+The template includes a custom script that:
 
-```bash
-pip install -r server/requirements.txt
-pytest
+1. **Parses `tailwind.config.cjs`** to find all `var(--variable)` references
+2. **Parses `src/index.css`** to find all defined CSS variables (`--variable:`)
+3. **Cross-references** them to find missing definitions
+4. **Reports undefined variables** with clear error messages
+
+### Example Output
+
+When CSS variables are missing:
+```
+❌ Undefined CSS variables found in tailwind.config.cjs:
+   --sidebar-background
+   --sidebar-foreground
+   --sidebar-primary
+
+Add these variables to src/index.css
 ```
 
-## API overview
+When all variables are defined:
+```
+✅ All CSS variables in tailwind.config.cjs are defined
+```
 
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /api/auth/register` | Create an account |
-| `POST /api/auth/token` | Obtain a JWT (OAuth2 password grant) |
-| `POST /api/devices/register` | Register a device |
-| `GET  /api/devices` | List the caller's devices |
-| `POST /api/cloud/connect` | Record intent to connect a cloud provider |
-| `GET  /api/cloud/status` | Cloud connection status |
-| `POST /api/backup/upload` | Upload a file (deduplicated) |
-| `GET  /api/backup/status` | Backup totals and storage saved |
-| `POST /api/ads/record` | Record a mock ad view |
-| `GET  /api/ads/earnings` | Mock earnings summary |
+## How It Works
 
-Full request/response detail lives in [`docs/api.md`](docs/api.md).
+The detection happens during the `npm run lint` command, which will:
+- Exit with error code 1 if undefined variables are found
+- Show exactly which variables need to be added to your CSS file
+- Integrate seamlessly with your development workflow
+
+This prevents runtime CSS issues where Tailwind classes reference undefined CSS variables.
