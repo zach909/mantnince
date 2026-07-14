@@ -1,10 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
 import {
   HardDrive,
   Database,
   Cloud,
   Smartphone,
-  Chrome,
+  Globe,
   Apple,
   Monitor,
 } from 'lucide-react'
@@ -19,10 +18,6 @@ import {
   useCloudStatus,
   useDeviceCount,
 } from '@/hooks/useBackupData'
-
-export const Route = createFileRoute('/_app/')({
-  component: DashboardPage,
-})
 
 function formatGb(val: number) { return `${val.toFixed(1)} GB` }
 function formatDedup(rate: number) { return `${rate.toFixed(0)}% dedup` }
@@ -107,7 +102,7 @@ export function DashboardPage() {
           <CloudCard
             provider="google"
             name="Google Drive"
-            icon={<Chrome className="size-5" />}
+            icon={<Globe className="size-5" />}
             connected={cloudStatus?.google.connected ?? false}
             filesCount={cloudStatus?.google.filesCount ?? 0}
             lastSync={cloudStatus ? formatSyncDate(cloudStatus.google.lastSync) : null}
