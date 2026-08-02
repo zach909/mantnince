@@ -1,0 +1,25 @@
+{
+  "name": "universal-backup-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Secure Electron companion for Universal Backup Cloud",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "electron": "^36.3.1"
+  },
+  "devDependencies": {
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.universalbackup.cloud",
+    "productName": "Universal Backup Cloud",
+    "files": ["main.js", "preload.js", "renderer/**/*", "package.json"],
+    "directories": { "output": "release" }
+  }
+}
