@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { HardDrive, Database, Shield, Download, RefreshCw, FileText, Activity } from 'lucide-react'
+import { HardDrive, Database, Shield, Download, RefreshCw, FileText, Activity, Gamepad2 } from 'lucide-react'
+import { PlayroomWall } from './components/PlayroomWall'
 
 interface Capture {
   id: string
@@ -51,7 +52,34 @@ function StatRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   )
 }
 
-export default function App() {
+type View = 'stats' | 'playroom'
+
+function TabBar({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  const tabs: { id: View; label: string; icon: React.ReactNode }[] = [
+    { id: 'stats', label: 'Stats', icon: <Shield className="w-3.5 h-3.5" /> },
+    { id: 'playroom', label: 'Playroom', icon: <Gamepad2 className="w-3.5 h-3.5" /> },
+  ]
+  return (
+    <div className="flex gap-1 p-1 rounded-[var(--radius-md)] bg-white/5">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] transition-colors ${
+            view === tab.id
+              ? 'bg-[var(--color-accent)] text-white'
+              : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+          }`}
+        >
+          {tab.icon}
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function StatsView() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +122,7 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-48 gap-3 p-6 text-center">
+      <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
         <Activity className="w-8 h-8 text-[var(--color-red)] opacity-60" />
         <p className="text-sm text-[var(--color-red)]">Connection error</p>
         <p className="text-xs text-[var(--color-text-muted)]">{error}</p>
@@ -109,7 +137,7 @@ export default function App() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -197,6 +225,17 @@ export default function App() {
           Monitoring downloads
         </span>
       </div>
+    </div>
+  )
+}
+
+export default function App() {
+  const [view, setView] = useState<View>('stats')
+
+  return (
+    <div className="p-4 space-y-3">
+      <TabBar view={view} onChange={setView} />
+      {view === 'stats' ? <StatsView /> : <PlayroomWall />}
     </div>
   )
 }
