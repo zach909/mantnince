@@ -48,7 +48,6 @@ universal-backup-system/
 ### Backend Server
 
 ```bash
-git clone https://github.com/zach909/mantnince.git
 # Install dependencies
 pip install -r server/requirements.txt
 
@@ -61,6 +60,8 @@ Access the interactive API docs at: http://localhost:8000/docs
 ### Frontend Extension
 
 ```bash
+git clone https://github.com/zach909/mantnince.git
+cd mantnince
 # Install dependencies
 npm install
 
