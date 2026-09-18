@@ -1,8 +1,12 @@
 // Content script — injects a floating "Capture to Backup" button
-// when the user hovers over download links on any page.
+// when the user hovers over download links on any page, and a one-time
+// warning banner if the page trips the local risky-site heuristic.
+
+import { assessSiteRisk } from './lib/siteRisk';
 
 (function () {
   let hostEl: HTMLDivElement | null = null;
+  const pageRisk = assessSiteRisk(location.href);
 
   function createFloatingBtn(link: HTMLAnchorElement, x: number, y: number) {
     removeBtn();
@@ -42,6 +46,7 @@
             filename: link.download || link.textContent?.trim() || link.href.split('/').pop() || 'unknown',
             fileSize: 0,
             hash: null,
+            siteRisk: pageRisk,
           },
         },
         (res) => {
@@ -131,4 +136,52 @@
       removeBtn();
     }
   });
+
+  // One-time risky-site banner — local heuristic only, not a verified scan.
+  if (pageRisk.risky) {
+    const banner = document.createElement('div');
+    const shadow = banner.attachShadow({ mode: 'closed' });
+    shadow.innerHTML = `
+      <style>
+        div {
+          position: fixed;
+          top: 16px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 2147483647;
+          max-width: min(420px, calc(100vw - 32px));
+          background: #2b1a12;
+          border: 1px solid #7a4a1f;
+          color: #ffd9a8;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font: 12px/1.4 system-ui, sans-serif;
+          box-shadow: 0 4px 20px rgba(0,0,0,.4);
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+        }
+        strong { display: block; margin-bottom: 2px; }
+        button {
+          background: transparent;
+          border: 0;
+          color: #ffd9a8;
+          cursor: pointer;
+          font-size: 14px;
+          line-height: 1;
+          padding: 0;
+        }
+      </style>
+      <div>
+        <span style="flex:1">
+          <strong>This page looks potentially risky</strong>
+          Backup Cloud's local check flagged: ${pageRisk.reasons.join('; ')}. This isn't a verified malware scan — just a heuristic, so use your own judgment before downloading.
+        </span>
+        <button aria-label="Dismiss">×</button>
+      </div>
+    `;
+    shadow.querySelector('button')!.addEventListener('click', () => banner.remove());
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 10000);
+  }
 })();

@@ -9,4 +9,69 @@ $('refresh').onclick = load;
 $('health').onclick = async () => { try { const r = await bridge.healthCheck(); notify(r.message, !r.ok); } catch (e) { notify(e.message, true); } };
 $('docs').onclick = () => bridge.openApiDocs();
 $('register').onclick = async () => { try { const r = await bridge.registerDevice({ name: 'This desktop', type: 'desktop', platform: navigator.platform, os_version: 'Electron' }); notify(r.message || 'Device registered'); await load(); } catch (e) { notify(e.message, true); } };
-(async () => { session = await bridge.getSession(); $('api').value = session.apiUrl; $('demo').checked = session.demo; setMode(); if (session.demo || session.authenticated) load(); })();
+
+// ── System health (real, read-only stats for this machine) ──────────
+function bar(pct) { return `<div class="meter"><div class="meter-fill" style="width:${Math.min(100, Math.max(0, pct))}%"></div></div>`; }
+async function loadHealth() {
+  $('healthBody').textContent = 'Reading…';
+  try {
+    const h = await bridge.getSystemHealth();
+    const disk = h.disk ? `${h.disk.usedGb} / ${h.disk.totalGb} GB (${h.disk.percent}%)` : 'Unavailable';
+    $('healthBody').innerHTML = `
+      <div class="metric"><span>CPU · ${h.cpu.cores} cores</span><strong>${h.cpu.percent}%</strong></div>${bar(h.cpu.percent)}
+      <div class="metric"><span>Memory</span><strong>${h.ram.usedGb} / ${h.ram.totalGb} GB</strong></div>${bar(h.ram.percent)}
+      <div class="metric"><span>Disk (home volume)</span><strong>${disk}</strong></div>${h.disk ? bar(h.disk.percent) : ''}
+      <small>${h.platform} · ${h.osRelease} · up ${h.uptimeHours}h</small>`;
+  } catch (e) {
+    $('healthBody').textContent = `Could not read system health: ${e.message}`;
+  }
+}
+$('healthRefresh').onclick = loadHealth;
+
+// ── Software updates (read-only check — never auto-installs) ─────────
+$('updatesRefresh').onclick = async () => {
+  $('updatesBody').textContent = 'Checking…';
+  try {
+    const r = await bridge.checkForUpdates();
+    if (!r.supported) {
+      $('updatesBody').innerHTML = `${r.message}${r.deepLink ? ' <button class="ghost" id="openUpdateSettings">Open update settings</button>' : ''}`;
+      document.getElementById('openUpdateSettings')?.addEventListener('click', () => bridge.openUpdateSettings());
+      return;
+    }
+    if (!r.ok) { $('updatesBody').textContent = `Could not check: ${r.message}`; return; }
+    $('updatesBody').innerHTML = r.upToDate
+      ? 'Up to date.'
+      : `<pre class="raw">${(r.raw || '').replace(/[<>]/g, '')}</pre>`;
+  } catch (e) {
+    $('updatesBody').textContent = `Could not check: ${e.message}`;
+  }
+};
+$('restart').onclick = async () => {
+  try {
+    const r = await bridge.restartComputer();
+    if (r.cancelled) return;
+    notify(r.started ? 'Restart initiated.' : `Could not restart: ${r.error}`, !r.started);
+  } catch (e) { notify(e.message, true); }
+};
+
+// ── Ad screensaver / mock earnings ────────────────────────────────────
+async function loadEarnings() {
+  try {
+    const e = await bridge.getEarnings();
+    $('earningsBody').innerHTML = `<strong>$${e.total.toFixed(2)}</strong> from ${e.ads_watched} ad break${e.ads_watched === 1 ? '' : 's'}<br><small>${e.note}</small>`;
+  } catch (e) {
+    $('earningsBody').textContent = `Could not load earnings: ${e.message}`;
+  }
+}
+$('earningsRefresh').onclick = loadEarnings;
+$('watchAd').onclick = () => bridge.openScreensaver();
+bridge.onEarningsChanged(() => loadEarnings());
+
+(async () => {
+  session = await bridge.getSession();
+  $('api').value = session.apiUrl;
+  $('demo').checked = session.demo;
+  setMode();
+  if (session.demo || session.authenticated) { load(); loadEarnings(); }
+  loadHealth();
+})();

@@ -1,4 +1,5 @@
 import { createClient } from '@blinkdotnew/sdk';
+import { assessSiteRisk } from './lib/siteRisk';
 
 const PROJECT_ID = import.meta.env.VITE_BLINK_PROJECT_ID;
 const SECRET_KEY = import.meta.env.VITE_BLINK_SECRET_KEY;
@@ -55,12 +56,14 @@ chrome.downloads.onChanged.addListener(async (delta) => {
 
     const isDuplicate = existing.length > 0;
     const storageSaved = isDuplicate ? download.fileSize || 0 : 0;
+    const siteRisk = assessSiteRisk(download.referrer || download.url);
 
     const capture = await blink.db
       .table<{
         id: string; userId: string; url: string; filename: string;
         fileHash: string; fileSize: number; referrer: string;
         storageSaved: number; duplicateOf: string | null;
+        siteRisky: boolean; siteRiskReasons: string;
         createdAt: string; updatedAt: string;
       }>('backup_captures')
       .create({
@@ -73,13 +76,15 @@ chrome.downloads.onChanged.addListener(async (delta) => {
         referrer: download.referrer || '',
         storageSaved: storageSaved,
         duplicateOf: isDuplicate ? existing[0].id : null,
+        siteRisky: siteRisk.risky,
+        siteRiskReasons: siteRisk.reasons.join('; '),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
     // Update badge
     const { captures = [] } = await chrome.storage.local.get(['captures']);
-    captures.push({ id: capture.id, filename: name, saved: storageSaved });
+    captures.push({ id: capture.id, filename: name, saved: storageSaved, risky: siteRisk.risky });
     await chrome.storage.local.set({ captures, lastCapture: capture });
 
     const badgeText = isDuplicate ? 'DUP' : String(captures.length);
@@ -147,18 +152,20 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
   if (msg.type === 'CONTENT_CAPTURE') {
     (async () => {
       try {
-        const { url, filename, hash: rawHash } = msg.data;
+        const { url, filename, hash: rawHash, siteRisk } = msg.data;
         const fileHash = rawHash || hashString(`${url}|${filename}`);
         const existing = await blink.db
           .table<{ id: string; url: string; fileHash: string }>('backup_captures')
           .list({ where: { fileHash } });
         const isDuplicate = existing.length > 0;
+        const risk = siteRisk ?? assessSiteRisk(url);
 
         await blink.db
           .table<{
             id: string; userId: string; url: string; filename: string;
             fileHash: string; fileSize: number; referrer: string;
             storageSaved: number; duplicateOf: string | null;
+            siteRisky: boolean; siteRiskReasons: string;
             createdAt: string; updatedAt: string;
           }>('backup_captures')
           .create({
@@ -171,12 +178,14 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
             referrer: '',
             storageSaved: isDuplicate ? (msg.data.fileSize || 0) : 0,
             duplicateOf: isDuplicate ? existing[0].id : null,
+            siteRisky: risk.risky,
+            siteRiskReasons: risk.reasons.join('; '),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
 
         const { captures = [] } = await chrome.storage.local.get(['captures']);
-        captures.push({ id: uid(), filename, saved: isDuplicate ? (msg.data.fileSize || 0) : 0 });
+        captures.push({ id: uid(), filename, saved: isDuplicate ? (msg.data.fileSize || 0) : 0, risky: risk.risky });
         await chrome.storage.local.set({ captures });
 
         chrome.action.setBadgeText({ text: String(captures.length) });
@@ -195,7 +204,7 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
     (async () => {
       try {
         const captures = await blink.db
-          .table<{ id: string; fileSize: number; storageSaved: number; duplicateOf: string | null; createdAt: string }>('backup_captures')
+          .table<{ id: string; fileSize: number; storageSaved: number; duplicateOf: string | null; siteRisky: boolean; createdAt: string }>('backup_captures')
           .list({ orderBy: { createdAt: 'desc' }, limit: 50 });
 
         const totalBackups = captures.length;
@@ -219,6 +228,7 @@ chrome.runtime.onMessage.addListener((msg: any, sender, sendResponse) => {
               size: c.fileSize,
               saved: Number(c.storageSaved) || 0,
               duplicate: !!c.duplicateOf,
+              risky: !!c.siteRisky,
               date: c.createdAt,
             })),
           }
