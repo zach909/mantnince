@@ -1,14 +1,20 @@
 import { Sky } from '@react-three/drei'
 import { PLATFORMS } from '../constants'
+import type { BackendData } from '../lib/backendClient'
+import { DedupReef } from './zones/DedupReef'
+import { CloudDocks } from './zones/CloudDocks'
+import { SystemVitals } from './zones/SystemVitals'
+import { SecurityBeacon } from './zones/SecurityBeacon'
+import { EarningsPlaza } from './zones/EarningsPlaza'
 
 /**
- * A small diorama-style scene: a handful of authored platforms forming one
- * simple path, a couple of decorative props, and one oversized background
- * object to sell "tiny robot in a huge world" scale contrast — the core
- * visual idea from the spec, scoped down to a single tiny vignette rather
- * than a full biome.
+ * The diorama: the original staircase-of-platforms rescue puzzle, plus five
+ * small "kiosk" zones around the ground level, each a physical stand-in for
+ * one real subsystem of the backup app (dedup, cloud connections, device
+ * vitals, the risky-site heuristic, the mock ad ledger) driven by live or
+ * demo data — see game/README.md for the full mapping.
  */
-export function Level() {
+export function Level({ data }: { data: BackendData }) {
   return (
     <>
       <Sky sunPosition={[10, 8, -6]} turbidity={4} rayleigh={1.2} />
@@ -56,10 +62,17 @@ export function Level() {
         <cylinderGeometry args={[0.25, 0.25, 10, 12]} />
         <meshStandardMaterial color="#5a6472" metalness={0.5} roughness={0.4} />
       </mesh>
+
+      {/* Subsystem zones — the actual "ad for your computer" content */}
+      <EarningsPlaza earnings={data.earnings} position={[0, 0, 9.5]} />
+      <DedupReef backup={data.backup} position={[-6, 0, 2]} />
+      <CloudDocks cloud={data.cloud} position={[6, 0, 2]} />
+      <SystemVitals position={[-6, 0, -6.5]} />
+      <SecurityBeacon position={[6, 0, -6.5]} />
     </>
   )
 }
 
 const TREE_POSITIONS: [number, number, number][] = [
-  [4, 0, 2], [5.5, 0, -1], [-5, 0, 1], [-6, 0, -3], [3.2, 1.9, -9.6], [-4, 2.9, -11.5],
+  [4, 0, 5], [5.5, 0, -1], [-4.2, 0, -1.5], [3.2, 1.9, -9.6], [-4, 2.9, -11.5],
 ]

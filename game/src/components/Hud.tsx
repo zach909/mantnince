@@ -25,13 +25,13 @@ export function Hud() {
           🤖 {collectedIds.size}/{total} rescued
         </div>
         <div style={{ ...styles.pill, opacity: gadgetReady ? 1 : 0.6 }}>
-          Boost: {gadgetReady ? 'Ready' : `${(cooldownRemaining / 1000).toFixed(1)}s`}
+          Optimizer: {gadgetReady ? 'Ready' : `${(cooldownRemaining / 1000).toFixed(1)}s`}
         </div>
       </div>
 
       {toast && <div style={styles.toast}>{toast}</div>}
 
-      <div style={styles.hint}>WASD / Arrows — move · Space — jump · Shift / E — boost</div>
+      <div style={styles.hint}>WASD / Arrows — move · Space — jump · Shift / E — optimizer thruster</div>
 
       {collectedIds.size === total && (
         <div style={styles.complete}>All bots rescued! 🎉</div>

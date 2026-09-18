@@ -33,7 +33,24 @@ export interface CollectibleDef {
   hint: 'onPath' | 'hidden'
 }
 
-export const COLLECTIBLES: CollectibleDef[] = [
-  { id: 'bit', label: 'Bit', position: [1.5, 2.4, -6], hint: 'onPath' },
-  { id: 'byte', label: 'Byte', position: [-1.5, 6.5, -13.5], hint: 'hidden' },
+/** Fixed physical slots for the rescue puzzle (already jump/boost-tuned).
+ * The *identity* of what's rescued there is filled in from real device data
+ * — see buildCollectibleDefs() below — so the mechanic stays reliable while
+ * the content is live. */
+const COLLECTIBLE_SLOTS: { position: [number, number, number]; hint: 'onPath' | 'hidden' }[] = [
+  { position: [1.5, 2.4, -6], hint: 'onPath' },
+  { position: [-1.5, 6.5, -13.5], hint: 'hidden' },
 ]
+
+/** Rescuing a bot here represents a real registered device coming online —
+ * pulled from /api/devices (or its demo equivalent). Padded with a generic
+ * bot if there are fewer than two devices, so the puzzle always has exactly
+ * as many targets as it was tuned for. */
+export function buildCollectibleDefs(deviceNames: string[]): CollectibleDef[] {
+  return COLLECTIBLE_SLOTS.map((slot, i) => ({
+    id: `device-${i}`,
+    label: deviceNames[i] ?? `Spare Bot ${i + 1}`,
+    position: slot.position,
+    hint: slot.hint,
+  }))
+}

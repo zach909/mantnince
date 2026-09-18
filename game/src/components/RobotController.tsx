@@ -63,7 +63,11 @@ export function RobotController() {
   }
 
   useFrame((state, rawDelta) => {
-    const delta = Math.min(rawDelta, 0.05)
+    // Clamp only against genuinely pathological gaps (e.g. returning from a
+    // backgrounded tab) — too tight a clamp turns ordinary frame-rate dips
+    // (a heavier scene, a slower machine) into perceived slow-motion instead
+    // of just choppier motion at the correct speed.
+    const delta = Math.min(rawDelta, 0.1)
     const t = state.clock.elapsedTime
     const k = keys.current
 
