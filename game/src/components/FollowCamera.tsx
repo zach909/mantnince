@@ -18,7 +18,7 @@ export function FollowCamera() {
   const lookAt = useRef(new THREE.Vector3())
 
   useFrame((_, rawDelta) => {
-    const delta = Math.min(rawDelta, 0.05)
+    const delta = Math.min(rawDelta, 0.1)
     desired.current.copy(playerPosition).add(OFFSET)
     camera.position.lerp(desired.current, 1 - Math.exp(-6 * delta))
 
