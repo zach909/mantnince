@@ -48,6 +48,7 @@ universal-backup-system/
 ### Backend Server
 
 ```bash
+git clone https://github.com/zach909/mantnince.git
 # Install dependencies
 pip install -r server/requirements.txt
 
