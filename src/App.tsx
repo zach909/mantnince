@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { HardDrive, Database, Shield, Download, RefreshCw, FileText, Activity, Gamepad2 } from 'lucide-react'
+import { HardDrive, Database, Shield, Download, RefreshCw, FileText, Activity, Gamepad2, AlertTriangle } from 'lucide-react'
 import { PlayroomWall } from './components/PlayroomWall'
 
 interface Capture {
@@ -9,6 +9,7 @@ interface Capture {
   size: number
   saved: number
   duplicate: boolean
+  risky?: boolean
   date: string
 }
 
@@ -189,7 +190,15 @@ function StatsView() {
               <div key={c.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-white/[0.03] transition-colors">
                 <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${c.duplicate ? 'bg-[var(--color-green)]' : 'bg-[var(--color-accent)]'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[var(--color-text)] truncate">{c.filename}</p>
+                  <p className="flex items-center gap-1 text-xs text-[var(--color-text)] truncate">
+                    {c.risky && (
+                      <AlertTriangle
+                        className="w-3 h-3 shrink-0 text-[var(--color-yellow)]"
+                        aria-label="Captured from a page flagged by the local risk heuristic"
+                      />
+                    )}
+                    <span className="truncate">{c.filename}</span>
+                  </p>
                   <p className="text-[10px] text-[var(--color-text-muted)]">{formatDate(c.date)}</p>
                 </div>
                 <div className="text-right">
