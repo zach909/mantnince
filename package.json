@@ -8,34 +8,9 @@
     "prebuild": "node scripts/generate-icons.js",
     "build": "npm run prebuild && vite build"
   },
-  "dependencies": {
-    "@blinkdotnew/sdk": "latest",
-    "@radix-ui/react-avatar": "^1.2.2",
-    "@radix-ui/react-dialog": "^1.1.19",
-    "@radix-ui/react-label": "^2.1.11",
-    "@radix-ui/react-slot": "^1.3.0",
-    "@radix-ui/react-tooltip": "^1.2.12",
-    "@tanstack/react-query": "^5.101.0",
-    "@tanstack/react-router": "^1.170.11",
-    "@tanstack/react-start": "^1.168.19",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.511.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@resvg/resvg-js": "^2.6.0",
-    "@types/chrome": "^0.0.300",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.5.0",
-    "tailwindcss": "^3.4.0",
     "typescript": "^5.7.0",
-    "vite": "8.0.14",
-    "@vitejs/plugin-react": "5.2.0"
+    "vite": "8.0.14"
   }
 }

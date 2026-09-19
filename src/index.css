@@ -1,6 +1,23 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ── Reset ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
 
 /* ── Popup container ───────────────────────────────────── */
 html,
@@ -56,4 +73,403 @@ body {
   --radius-md: 12px;
   --radius-lg: 14px;
   --radius-xl: 16px;
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.subtitle {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.stats-view,
+.playroom {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Tab bar ────────────────────────────────────────────── */
+.tabbar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tabbar__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: background-color 120ms, color 120ms;
+}
+
+.tabbar__btn:hover {
+  color: var(--color-text);
+}
+
+.tabbar__btn.is-active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btn-primary {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: #fff;
+  transition: background-color 120ms;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+}
+
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-muted);
+  transition: background-color 120ms, color 120ms;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+}
+
+.btn-ghost--sm {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+/* ── Loading / error states ─────────────────────────────── */
+.state-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 192px;
+  gap: 8px;
+  text-align: center;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-accent);
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-error {
+  color: var(--color-red);
+  opacity: 0.6;
+}
+
+.text-error {
+  font-size: 13px;
+  color: var(--color-red);
+}
+
+.icon-muted {
+  color: var(--color-text-muted);
+  opacity: 0.3;
+}
+
+.icon-risk {
+  flex-shrink: 0;
+  color: var(--color-yellow);
+}
+
+/* ── Stats grid ─────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-card {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.stat-card__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.stat-card__value {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card__hint {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ── Capture list ───────────────────────────────────────── */
+.capture-list {
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.capture-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--color-border);
+  transition: background-color 120ms;
+}
+
+.capture-row:first-child {
+  border-top: none;
+}
+
+.capture-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.capture-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.capture-dot.is-dup {
+  background: var(--color-green);
+}
+
+.capture-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.capture-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.capture-name span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.capture-date {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.capture-meta {
+  text-align: right;
+}
+
+.capture-size {
+  font-size: 12px;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.capture-badge {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.capture-badge.is-dup {
+  color: var(--color-green);
+}
+
+.capture-badge.is-new {
+  color: var(--color-text-muted);
+}
+
+/* ── Empty state ────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 0;
+  text-align: center;
+}
+
+.empty-state__hint {
+  max-width: 240px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* ── Footer row ─────────────────────────────────────────── */
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.footer-row span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Playroom mini-game ─────────────────────────────────── */
+.game-frame {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.game-canvas {
+  display: block;
+  width: 100%;
+  image-rendering: pixelated;
+}
+
+.game-toast {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 10px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.game-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dpad {
+  display: flex;
+  gap: 6px;
+}
+
+.dpad-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+  user-select: none;
+  transition: background-color 120ms;
+}
+
+.dpad-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dpad-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.grab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #fff;
+  transition: background-color 120ms, opacity 120ms;
+}
+
+.grab-btn:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.grab-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.game-hint {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-align: center;
 }

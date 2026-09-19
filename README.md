@@ -14,9 +14,8 @@ A fully automatic, cross-platform backup system with content-addressed deduplica
 
 ```
 universal-backup-system/
-├── server/                      # FastAPI Backend
-│   ├── main.py                 # Main server entry
-│   ├── requirements.txt        # Python dependencies
+├── server/                      # Stdlib-only backend (zero pip dependencies)
+│   ├── main.py                 # HTTP server entry (http.server.ThreadingHTTPServer)
 │   ├── api/
 │   │   ├── auth.py            # Authentication endpoints
 │   │   ├── cloud.py           # Cloud sync endpoints
@@ -24,23 +23,23 @@ universal-backup-system/
 │   │   ├── devices.py         # Device management
 │   │   └── earnings.py        # Ad earnings (mock)
 │   ├── core/
-│   │   ├── database.py        # Database setup
-│   │   ├── security.py        # Security utilities
+│   │   ├── http.py            # Router, CORS, JSON/form/multipart parsing
+│   │   ├── database.py        # sqlite3 access (no ORM)
+│   │   ├── security.py        # PBKDF2 password hashing + hand-rolled JWT
 │   │   └── config.py          # Configuration
-│   ├── services/
-│   │   ├── cloud_connectors/  # Cloud-specific connectors
-│   │   │   ├── google.py
-│   │   │   └── microsoft.py
-│   │   └── dedup.py           # Core deduplication logic
-│   └── models.py              # SQLAlchemy ORM models
+│   └── services/
+│       ├── cloud_connectors/  # Cloud-specific connectors
+│       │   ├── google.py
+│       │   └── microsoft.py
+│       └── dedup.py           # Core deduplication logic
 │
-├── src/                        # Browser Extension (TypeScript)
-│   ├── App.tsx                # Popup UI
-│   ├── background.ts          # Download capture & stats
-│   └── content.ts             # Content script
+├── src/                         # Browser Extension (TypeScript, no npm runtime deps)
+│   ├── App.ts                  # Popup UI (vanilla DOM, no framework)
+│   ├── background.ts           # Download capture & stats (chrome.storage.local only)
+│   └── content.ts              # Content script
 │
-├── tests/                      # Pytest test suite
-└── docs/                       # API documentation
+├── tests/                       # unittest-based test suite (stdlib only)
+└── docs/                        # API documentation
 ```
 
 ## 🚀 Quick Start
@@ -145,7 +144,7 @@ curl http://localhost:8000/api/backup/status \
 
 ## 🔐 Security Notes
 
-- Passwords are hashed with bcrypt (SHA-256 pre-hash for long password support)
+- Passwords are hashed with PBKDF2-HMAC-SHA256 (260k iterations, random salt, stdlib `hashlib` only)
 - All non-auth endpoints require valid JWT authentication
 - Data is scoped per-user (users can only access their own data)
 - OAuth tokens for cloud providers are NOT stored until real integration is implemented
