@@ -1,54 +1,52 @@
-"""Universal Backup System — FastAPI application entry point.
+"""Universal Backup System — stdlib-only HTTP server entry point.
 
 Run locally with:
-    uvicorn server.main:app --reload
+    python -m server.main
 """
 
-from contextlib import asynccontextmanager
+from __future__ import annotations
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from http.server import ThreadingHTTPServer
 
 from server.api import auth, backup, cloud, devices, earnings
+from server.core.config import Settings, get_settings
 from server.core.database import init_db
+from server.core.http import build_http_server
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    init_db()
-    yield
+def _health(_request) -> tuple[int, dict]:
+    return 200, {"status": "ok"}
 
 
-app = FastAPI(
-    title="Universal Backup System",
-    version="0.1.0",
-    summary="Consent-based cross-platform backup with content-hash deduplication.",
-    lifespan=lifespan,
-)
-
-# The Electron desktop app calls this API from its main process, which isn't
-# subject to CORS. The game/ prototype calls it directly from a browser tab
-# (its own origin, localhost:3100 in dev), which is — so browser clients need
-# an explicit allow-list. Kept to local dev origins; add a real deployed
-# origin here if/when this API is ever hosted somewhere other than a
-# developer's own machine.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3100",
-        "http://127.0.0.1:3100",
-    ],
-    allow_methods=["GET", "POST"],
-    allow_headers=["Authorization", "Content-Type"],
-)
-
-app.include_router(auth.router)
-app.include_router(devices.router)
-app.include_router(cloud.router)
-app.include_router(backup.router)
-app.include_router(earnings.router)
+def _build_routes() -> dict:
+    routes: dict = {("GET", "/health"): _health}
+    for module in (auth, devices, cloud, backup, earnings):
+        routes.update(module.ROUTES)
+    return routes
 
 
-@app.get("/health", tags=["meta"])
-def health() -> dict:
-    return {"status": "ok"}
+ROUTES = _build_routes()
+
+
+def build_server(host: str = "127.0.0.1", port: int = 8000, settings: Settings | None = None) -> ThreadingHTTPServer:
+    """Build (but do not start) the backing HTTP server, with tables created."""
+    settings = settings or get_settings()
+    init_db(settings)
+    return build_http_server(ROUTES, settings, host=host, port=port)
+
+
+def main() -> None:
+    host = "0.0.0.0"
+    port = 8000
+    server = build_server(host, port)
+    print(f"Universal Backup System listening on http://{host}:{port}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()

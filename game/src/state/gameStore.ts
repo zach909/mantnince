@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createStore } from '../lib/createStore'
 
 interface GameState {
   collectedIds: Set<string>
@@ -12,7 +12,7 @@ interface GameState {
   isGadgetReady: () => boolean
 }
 
-export const useGameStore = create<GameState>((set, get) => ({
+export const useGameStore = createStore<GameState>((set, get) => ({
   collectedIds: new Set(),
   totalCollectibles: 2,
   toast: null,

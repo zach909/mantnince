@@ -3,7 +3,3 @@ name = "universal-backup-system"
 version = "0.1.0"
 description = "Consent-based cross-platform backup with content-hash deduplication."
 requires-python = ">=3.11"
-
-[tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]

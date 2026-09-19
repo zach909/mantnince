@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createStore } from '../lib/createStore'
 import { loadBackendData, saveConnectConfig, type BackendData, type ConnectConfig } from '../lib/backendClient'
 
 interface BackendState {
@@ -10,7 +10,7 @@ interface BackendState {
   useDemo: () => Promise<void>
 }
 
-export const useBackendStore = create<BackendState>((set) => ({
+export const useBackendStore = createStore<BackendState>((set) => ({
   data: null,
   loading: false,
 

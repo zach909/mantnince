@@ -1,53 +1,64 @@
 """Authentication endpoints: register and token issuance."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from __future__ import annotations
 
-from server.core.database import get_db
+import uuid
+from datetime import datetime, timezone
+
+from server.core.http import ApiError, Request
 from server.core.security import create_access_token, hash_password, verify_password
-from server.models import User
-from server.schemas import RegisterRequest, RegisterResponse, TokenResponse
-
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+from server.schemas import parse_register_request
 
 
-@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> RegisterResponse:
-    existing = db.scalar(
-        select(User).where((User.username == payload.username) | (User.email == payload.email))
-    )
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def register(request: Request):
+    payload = parse_register_request(request.json())
+    conn = request.db
+
+    existing = conn.execute(
+        "SELECT id FROM users WHERE username = ? OR email = ?",
+        (payload.username, payload.email),
+    ).fetchone()
     if existing is not None:
-        raise HTTPException(status_code=409, detail="Username or email already registered")
+        raise ApiError(409, "Username or email already registered")
 
-    user = User(
-        username=payload.username,
-        email=payload.email,
-        hashed_password=hash_password(payload.password),
+    user_id = str(uuid.uuid4())
+    conn.execute(
+        "INSERT INTO users (id, username, email, hashed_password, created_at) VALUES (?, ?, ?, ?, ?)",
+        (user_id, payload.username, payload.email, hash_password(payload.password), _now_iso()),
     )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return RegisterResponse(user_id=user.id)
+    conn.commit()
+    return 201, {"user_id": user_id, "message": "User registered"}
 
 
-@router.post("/token", response_model=TokenResponse)
-def token(
-    form: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-) -> TokenResponse:
+def token(request: Request):
     """OAuth2 password-grant token endpoint.
 
     ``username`` may be either the account username or email.
     """
-    user = db.scalar(
-        select(User).where((User.username == form.username) | (User.email == form.username))
-    )
-    if user is None or not verify_password(form.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    form = request.form()
+    username = form.get("username", "")
+    password = form.get("password", "")
+
+    conn = request.db
+    user = conn.execute(
+        "SELECT * FROM users WHERE username = ? OR email = ?",
+        (username, username),
+    ).fetchone()
+    if user is None or not verify_password(password, user["hashed_password"]):
+        raise ApiError(
+            401,
+            "Incorrect username or password",
+            {"WWW-Authenticate": "Bearer"},
         )
-    return TokenResponse(token=create_access_token(user.id), user_id=user.id)
+    access_token = create_access_token(user["id"], request.settings)
+    return 200, {"token": access_token, "user_id": user["id"], "token_type": "bearer"}
+
+
+ROUTES = {
+    ("POST", "/api/auth/register"): register,
+    ("POST", "/api/auth/token"): token,
+}

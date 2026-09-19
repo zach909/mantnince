@@ -27,10 +27,7 @@
     "noUncheckedIndexedAccess": false,
     "noImplicitOverride": false,
     "allowUnreachableCode": true,
-    "allowUnusedLabels": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "allowUnusedLabels": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
