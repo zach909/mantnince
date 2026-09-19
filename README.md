@@ -47,15 +47,19 @@ universal-backup-system/
 
 ### Backend Server
 
-```bash
-# Install dependencies
-pip install -r server/requirements.txt
+The backend has zero third-party dependencies — everything is Python standard
+library, so there is nothing to `pip install`.
 
-# Run the server
-uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+```bash
+# Run the server (stdlib-only, Python 3.11+)
+python -m server.main
 ```
 
-Access the interactive API docs at: http://localhost:8000/docs
+The server listens on http://0.0.0.0:8000. Run the test suite with:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 ### Frontend Extension
 
