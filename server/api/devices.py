@@ -1,47 +1,57 @@
 """Device registration and listing."""
 
-from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from __future__ import annotations
 
-from server.core.database import get_db
+import uuid
+from datetime import datetime, timezone
+
+from server.core.http import ApiError, Request
 from server.core.security import get_current_user
-from server.models import Device, User
-from server.schemas import (
-    DeviceListResponse,
-    DeviceOut,
-    DeviceRegisterRequest,
-    DeviceRegisterResponse,
-)
-
-router = APIRouter(prefix="/api/devices", tags=["devices"])
+from server.schemas import parse_device_register_request
 
 
-@router.post("/register", response_model=DeviceRegisterResponse, status_code=status.HTTP_201_CREATED)
-def register_device(
-    payload: DeviceRegisterRequest,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> DeviceRegisterResponse:
-    info = payload.device_info
-    device = Device(
-        user_id=user.id,
-        name=info.name,
-        type=info.type,
-        platform=info.platform,
-        os_version=info.os_version,
-        status="online",
+def _require_user(request: Request):
+    user = get_current_user(request.headers, request.db, request.settings)
+    if user is None:
+        raise ApiError(401, "Could not validate credentials", {"WWW-Authenticate": "Bearer"})
+    return user
+
+
+def register_device(request: Request):
+    user = _require_user(request)
+    info = parse_device_register_request(request.json())
+
+    device_id = str(uuid.uuid4())
+    request.db.execute(
+        """
+        INSERT INTO devices (id, user_id, name, type, platform, os_version, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'online', ?)
+        """,
+        (
+            device_id,
+            user["id"],
+            info.name,
+            info.type,
+            info.platform,
+            info.os_version,
+            datetime.now(timezone.utc).isoformat(),
+        ),
     )
-    db.add(device)
-    db.commit()
-    db.refresh(device)
-    return DeviceRegisterResponse(device_id=device.id)
+    request.db.commit()
+    return 201, {"device_id": device_id, "message": "Device registered"}
 
 
-@router.get("", response_model=DeviceListResponse)
-def list_devices(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> DeviceListResponse:
-    devices = db.scalars(select(Device).where(Device.user_id == user.id)).all()
-    return DeviceListResponse(devices=[DeviceOut.model_validate(d) for d in devices])
+def list_devices(request: Request):
+    user = _require_user(request)
+    rows = request.db.execute(
+        "SELECT id, name, type, status FROM devices WHERE user_id = ?",
+        (user["id"],),
+    ).fetchall()
+    devices = [{"id": r["id"], "name": r["name"], "type": r["type"], "status": r["status"]} for r in rows]
+    return 200, {"devices": devices}
+
+
+ROUTES = {
+    ("POST", "/api/devices/register"): register_device,
+    ("GET", "/api/devices"): list_devices,
+}
