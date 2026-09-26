@@ -4,15 +4,18 @@ import * as THREE from 'three'
 import { useKeyboard, consumeEdge } from '../hooks/useKeyboard'
 import { useAudioCues } from '../hooks/useAudioCues'
 import { useGameStore } from '../state/gameStore'
+import { useBugStore } from '../state/bugStore'
+import { bugRegistry } from '../state/bugRegistry'
 import { playerPosition, playerFacing, setPlayerGrounded, triggerCameraShake } from '../state/playerTransform'
 import { groundHeightAt, lerpAngle } from '../utils'
 import {
   MOVE_SPEED, ACCEL, DECEL, GRAVITY, JUMP_SPEED,
   BOOST_UP_SPEED, BOOST_FORWARD_SPEED, BOOST_COOLDOWN_MS,
   FALL_RESET_Y, SPAWN_POINT,
+  ATTACK_RADIUS, ATTACK_COOLDOWN_MS, ATTACK_DAMAGE,
 } from '../constants'
 
-type AnimState = 'idle' | 'run' | 'jump' | 'fall' | 'land' | 'boost'
+type AnimState = 'idle' | 'run' | 'jump' | 'fall' | 'land' | 'boost' | 'attack'
 
 const VISOR_COLORS: Record<AnimState, string> = {
   idle: '#bfe7ff',
@@ -21,7 +24,13 @@ const VISOR_COLORS: Record<AnimState, string> = {
   fall: '#8fa0ff',
   land: '#ffe27a',
   boost: '#ffd23f',
+  attack: '#ff6b6b',
 }
+
+// Corruption starts making the controls themselves unreliable above this
+// threshold — the "you start having trouble playing" beat, not just visual.
+const JITTER_START = 55
+const JITTER_MAX_AT = 95
 
 export function RobotController() {
   const keys = useKeyboard()
@@ -34,6 +43,7 @@ export function RobotController() {
   const visorRef = useRef<THREE.Mesh>(null!)
   const legLRef = useRef<THREE.Mesh>(null!)
   const legRRef = useRef<THREE.Mesh>(null!)
+  const swipeRef = useRef<THREE.Mesh>(null!)
 
   const pos = useRef(new THREE.Vector3(...SPAWN_POINT))
   const vel = useRef(new THREE.Vector3(0, 0, 0))
@@ -42,6 +52,8 @@ export function RobotController() {
   const animState = useRef<AnimState>('idle')
   const stateSince = useRef(0)
   const boostFlashUntil = useRef(0)
+  const attackReadyAt = useRef(0)
+  const attackFlashUntil = useRef(0)
 
   useEffect(() => {
     if (import.meta.env.DEV) {
@@ -80,6 +92,17 @@ export function RobotController() {
       dirX /= len
       dirZ /= len
     }
+
+    // A corrupted system fights back: past JITTER_START, input direction
+    // gets progressively noisier, so the controls themselves degrade —
+    // not just the visuals — as more bugs get through.
+    const corruption = useBugStore.getState().corruption
+    if (hasInput && corruption > JITTER_START) {
+      const severity = Math.min(1, (corruption - JITTER_START) / (JITTER_MAX_AT - JITTER_START))
+      dirX += (Math.random() - 0.5) * severity * 1.1
+      dirZ += (Math.random() - 0.5) * severity * 1.1
+    }
+
     const rate = hasInput ? ACCEL : DECEL
     vel.current.x = THREE.MathUtils.damp(vel.current.x, dirX * MOVE_SPEED, rate, delta)
     vel.current.z = THREE.MathUtils.damp(vel.current.z, dirZ * MOVE_SPEED, rate, delta)
@@ -103,6 +126,24 @@ export function RobotController() {
       setAnim('boost', t)
       boostFlashUntil.current = t + 0.3
       triggerCameraShake(0.12)
+    }
+
+    // ── Attack: a short-range swipe that damages any bug in range ──
+    if (consumeEdge(keys, 'attackPressed') && t >= attackReadyAt.current) {
+      attackReadyAt.current = t + ATTACK_COOLDOWN_MS / 1000
+      attackFlashUntil.current = t + 0.18
+      setAnim('attack', t)
+      audio.playAttack()
+      let hitAny = false
+      for (const [id, bug] of bugRegistry) {
+        const dx = bug.position.x - pos.current.x
+        const dz = bug.position.z - pos.current.z
+        if (Math.hypot(dx, dz) <= ATTACK_RADIUS) {
+          useBugStore.getState().damageBug(id, ATTACK_DAMAGE)
+          hitAny = true
+        }
+      }
+      if (hitAny) audio.playHit()
     }
 
     // ── Gravity + integrate ──
@@ -145,8 +186,9 @@ export function RobotController() {
     }
 
     // ── Animation state (transient states expire back to physical ones) ──
-    const transient = animState.current === 'land' || animState.current === 'boost'
-    const transientExpired = t - stateSince.current > (animState.current === 'boost' ? 0.3 : 0.18)
+    const transient = animState.current === 'land' || animState.current === 'boost' || animState.current === 'attack'
+    const transientDuration = animState.current === 'boost' ? 0.3 : 0.18
+    const transientExpired = t - stateSince.current > transientDuration
     if (!transient || transientExpired) {
       if (!grounded.current) setAnim(vel.current.y > 0 ? 'jump' : 'fall', t)
       else setAnim(speed > 0.4 ? 'run' : 'idle', t)
@@ -163,8 +205,19 @@ export function RobotController() {
     if (animState.current === 'jump' && stateT < 0.15) { squashY = 1.25; squashXZ = 0.85 }
     if (animState.current === 'land') { const p = Math.min(1, stateT / 0.18); squashY = THREE.MathUtils.lerp(0.7, 1, p); squashXZ = THREE.MathUtils.lerp(1.25, 1, p) }
     if (animState.current === 'boost') { squashY = 1.15; squashXZ = 0.9 }
+    if (animState.current === 'attack') { squashY = 0.9; squashXZ = 1.15 }
     bodyGroupRef.current.scale.set(squashXZ, squashY, squashXZ)
     bodyGroupRef.current.position.y = 0.55 + bounce
+
+    if (swipeRef.current) {
+      const active = t < attackFlashUntil.current
+      swipeRef.current.visible = active
+      if (active) {
+        const p = 1 - (attackFlashUntil.current - t) / 0.18
+        swipeRef.current.scale.setScalar(0.5 + p * 0.9)
+        ;(swipeRef.current.material as THREE.Material & { opacity: number }).opacity = 1 - p
+      }
+    }
 
     if (legLRef.current && legRRef.current) {
       const swing = animState.current === 'run' ? Math.sin(t * 10) * 0.5 : 0
@@ -196,6 +249,10 @@ export function RobotController() {
         <mesh ref={legRRef} position={[0.14, -0.58, 0]} castShadow>
           <cylinderGeometry args={[0.08, 0.08, 0.28, 10]} />
           <meshStandardMaterial color="#2f6fb0" />
+        </mesh>
+        <mesh ref={swipeRef} position={[0, 0, 0.55]} rotation={[0, 0, 0]} visible={false}>
+          <ringGeometry args={[0.35, 0.55, 24, 1, 0, Math.PI * 1.3]} />
+          <meshBasicMaterial color="#ff6b6b" transparent opacity={0.8} side={THREE.DoubleSide} />
         </mesh>
       </group>
     </group>

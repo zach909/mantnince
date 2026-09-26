@@ -1,4 +1,5 @@
 import { createStore } from '../lib/createStore'
+import { useActivityLog } from './activityLog'
 
 interface GameState {
   collectedIds: Set<string>
@@ -23,6 +24,7 @@ export const useGameStore = createStore<GameState>((set, get) => ({
     const next = new Set(get().collectedIds)
     next.add(id)
     set({ collectedIds: next, toast: `Rescued ${label}!` })
+    useActivityLog.getState().log(`Rescued device: ${label}.`)
     window.setTimeout(() => {
       if (get().toast === `Rescued ${label}!`) set({ toast: null })
     }, 2200)

@@ -9,6 +9,7 @@ export interface KeyState {
   jumpPressed: boolean
   boost: boolean
   boostPressed: boolean
+  attackPressed: boolean
 }
 
 const FORWARD = new Set(['KeyW', 'ArrowUp'])
@@ -17,12 +18,13 @@ const LEFT = new Set(['KeyA', 'ArrowLeft'])
 const RIGHT = new Set(['KeyD', 'ArrowRight'])
 const JUMP = new Set(['Space'])
 const BOOST = new Set(['ShiftLeft', 'ShiftRight', 'KeyE'])
+const ATTACK = new Set(['KeyF'])
 
-/** Tracks held keys in a ref (no re-renders) plus one-frame "just pressed" edges for jump/boost. */
+/** Tracks held keys in a ref (no re-renders) plus one-frame "just pressed" edges for jump/boost/attack. */
 export function useKeyboard() {
   const state = useRef<KeyState>({
     forward: false, back: false, left: false, right: false,
-    jump: false, jumpPressed: false, boost: false, boostPressed: false,
+    jump: false, jumpPressed: false, boost: false, boostPressed: false, attackPressed: false,
   })
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export function useKeyboard() {
       if (RIGHT.has(e.code)) s.right = true
       if (JUMP.has(e.code)) { if (!s.jump) s.jumpPressed = true; s.jump = true; e.preventDefault() }
       if (BOOST.has(e.code)) { if (!s.boost) s.boostPressed = true; s.boost = true }
+      if (ATTACK.has(e.code) && !e.repeat) s.attackPressed = true
     }
     function onUp(e: KeyboardEvent) {
       const s = state.current
@@ -56,7 +59,7 @@ export function useKeyboard() {
 }
 
 /** Call once per frame after reading an edge flag, to consume it. */
-export function consumeEdge(state: React.MutableRefObject<KeyState>, key: 'jumpPressed' | 'boostPressed') {
+export function consumeEdge(state: React.MutableRefObject<KeyState>, key: 'jumpPressed' | 'boostPressed' | 'attackPressed') {
   const value = state.current[key]
   state.current[key] = false
   return value
