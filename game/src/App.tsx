@@ -4,7 +4,10 @@ import { RobotController } from './components/RobotController'
 import { FollowCamera } from './components/FollowCamera'
 import { Level } from './components/Level'
 import { CollectibleBot } from './components/CollectibleBot'
+import { BugField } from './components/BugField'
+import { WaveDirector } from './components/WaveDirector'
 import { Hud } from './components/Hud'
+import { GlitchOverlay } from './components/GlitchOverlay'
 import { buildCollectibleDefs } from './constants'
 import { useBackendStore } from './state/backendStore'
 import { loadConnectConfig } from './lib/backendClient'
@@ -28,7 +31,7 @@ export default function App() {
     return (
       <div style={titleStyles.root}>
         <h1 style={titleStyles.title}>Deben&rsquo;s Adventure</h1>
-        <p style={titleStyles.subtitle}>a playable tour of your Universal Backup Cloud</p>
+        <p style={titleStyles.subtitle}>a playable, friendly tour of your Universal Backup Cloud</p>
 
         {loading && <p style={titleStyles.status}>Loading your backup data…</p>}
         {!loading && data && (
@@ -82,7 +85,9 @@ export default function App() {
           </div>
         )}
 
-        <p style={titleStyles.hint}>WASD / Arrows to move · Space to jump · Shift or E for the optimizer thruster</p>
+        <p style={titleStyles.hint}>
+          WASD/Arrows to move · Space to jump · F to attack bugs · Shift or E for the optimizer thruster
+        </p>
       </div>
     )
   }
@@ -95,6 +100,8 @@ export default function App() {
         <Suspense fallback={null}>
           <Level data={data} />
           <RobotController />
+          <BugField />
+          <WaveDirector />
           {collectibles.map((c) => (
             <CollectibleBot key={c.id} def={c} />
           ))}
@@ -102,6 +109,7 @@ export default function App() {
         </Suspense>
       </Canvas>
       <Hud />
+      <GlitchOverlay />
     </>
   )
 }
@@ -110,31 +118,31 @@ const titleStyles: Record<string, CSSProperties> = {
   root: {
     height: '100%', display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'center', gap: 10,
-    background: 'radial-gradient(circle at 50% 30%, #1c2a44, #0a0a12)',
-    color: '#fff', fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+    background: 'radial-gradient(circle at 50% 20%, #fff9e6 0%, #d6f5e3 45%, #bfe3ff 100%)',
+    color: '#1c2a44', fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
     padding: 24,
   },
-  title: { fontSize: 40, margin: 0, letterSpacing: '-0.02em' },
-  subtitle: { margin: 0, color: 'rgba(255,255,255,0.6)', fontSize: 14 },
-  status: { margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.65)' },
-  errorNote: { color: '#f0a2a2' },
+  title: { fontSize: 40, margin: 0, letterSpacing: '-0.02em', color: '#1c2a44' },
+  subtitle: { margin: 0, color: '#3a4a63', fontSize: 14 },
+  status: { margin: '4px 0 0', fontSize: 12, color: '#3a4a63' },
+  errorNote: { color: '#c0392b' },
   button: {
     marginTop: 10, padding: '10px 28px', fontSize: 15, fontWeight: 700,
     borderRadius: 999, border: 'none', background: '#4f8cff', color: '#fff', cursor: 'pointer',
   },
   linkButton: {
-    marginTop: 4, background: 'none', border: 'none', color: '#8eb4ff',
+    marginTop: 4, background: 'none', border: 'none', color: '#2f6fd0',
     fontSize: 12, cursor: 'pointer', textDecoration: 'underline',
   },
   connectPanel: {
-    marginTop: 4, width: 280, background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 14,
+    marginTop: 4, width: 280, background: 'rgba(255,255,255,0.75)',
+    border: '1px solid rgba(28,42,68,0.12)', borderRadius: 12, padding: 14,
     display: 'flex', flexDirection: 'column', gap: 10,
   },
-  label: { fontSize: 11, color: 'rgba(255,255,255,0.6)', display: 'flex', flexDirection: 'column', gap: 4 },
+  label: { fontSize: 11, color: '#3a4a63', display: 'flex', flexDirection: 'column', gap: 4 },
   input: {
-    background: '#101217', border: '1px solid #363d49', borderRadius: 8,
-    color: '#fff', padding: '8px 10px', fontSize: 12, outline: 'none',
+    background: '#fff', border: '1px solid #c7d3e0', borderRadius: 8,
+    color: '#1c2a44', padding: '8px 10px', fontSize: 12, outline: 'none',
   },
   connectRow: { display: 'flex', gap: 8 },
   smallButton: {
@@ -143,7 +151,7 @@ const titleStyles: Record<string, CSSProperties> = {
   },
   smallGhostButton: {
     flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600, borderRadius: 8,
-    border: '1px solid rgba(255,255,255,0.16)', background: 'transparent', color: '#fff', cursor: 'pointer',
+    border: '1px solid rgba(28,42,68,0.2)', background: 'transparent', color: '#1c2a44', cursor: 'pointer',
   },
-  hint: { position: 'absolute', bottom: 24, fontSize: 12, color: 'rgba(255,255,255,0.4)' },
+  hint: { position: 'absolute', bottom: 24, fontSize: 12, color: 'rgba(28,42,68,0.55)' },
 }

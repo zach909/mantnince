@@ -36,5 +36,10 @@ export function useAudioCues() {
     playCollect: () => tone(660, 0.18, 'triangle', 0.14, 990),
     playBoost: () => tone(220, 0.25, 'sawtooth', 0.12, 880),
     playFall: () => tone(200, 0.2, 'sine', 0.1, 90),
+    playAttack: () => tone(520, 0.08, 'square', 0.12, 260),
+    playHit: () => tone(180, 0.1, 'sawtooth', 0.12, 70),
+    playGlitch: () => tone(90 + Math.random() * 60, 0.1, 'square', 0.06, 40),
+    playCrash: () => tone(300, 0.9, 'sawtooth', 0.14, 30),
+    playBossHit: () => tone(140, 0.15, 'square', 0.16, 60),
   }
 }
