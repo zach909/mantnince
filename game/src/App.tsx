@@ -8,6 +8,7 @@ import { BugField } from './components/BugField'
 import { WaveDirector } from './components/WaveDirector'
 import { Hud } from './components/Hud'
 import { GlitchOverlay } from './components/GlitchOverlay'
+import { TouchControls } from './components/TouchControls'
 import { buildCollectibleDefs } from './constants'
 import { useBackendStore } from './state/backendStore'
 import { loadConnectConfig } from './lib/backendClient'
@@ -110,6 +111,7 @@ export default function App() {
       </Canvas>
       <Hud />
       <GlitchOverlay />
+      <TouchControls />
     </>
   )
 }
