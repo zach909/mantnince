@@ -20,7 +20,44 @@ npm run build    # typecheck + production build
 ```
 
 Controls: WASD/Arrows to move, Space to jump, **F to attack bugs**, Shift or E
-for the optimizer thruster gadget.
+for the optimizer thruster gadget — or the on-screen joystick/buttons, which
+work with touch *or* mouse (see `TouchControls.tsx`).
+
+## Android / iOS (Capacitor)
+
+The game is wrapped as a native app with [Capacitor](https://capacitorjs.com/),
+which packages the same web build (`dist/`) into an installable Android/iOS
+shell rather than being a separate codebase. `android/` and `ios/` are
+committed, generated native projects — don't hand-edit their Capacitor-managed
+files; change the web app and re-run `npx cap sync`.
+
+```bash
+npm run build && npx cap sync   # rebuild the web app, copy it into both native projects
+
+# Android — buildable and verifiable on Linux, no Mac required
+cd android
+echo "sdk.dir=$ANDROID_HOME" > local.properties   # your own Android SDK path; gitignored
+./gradlew assembleDebug          # → app/build/outputs/apk/debug/app-debug.apk
+adb install app/build/outputs/apk/debug/app-debug.apk   # onto a device/emulator
+
+# iOS — requires Xcode on macOS; cannot be built or run from this repo's
+# Linux dev environment. Open ios/App/App.xcworkspace in Xcode on a Mac,
+# select a simulator or device, and Run. This project was generated and
+# type-checked here, but never actually compiled — treat the first Xcode
+# build as the real first test of the iOS side.
+```
+
+Both platforms get the **same** TypeScript/React/Three.js code and the same
+touch controls — Capacitor doesn't fork the app per platform, it's one web
+build wrapped twice.
+
+Live-server connections from the wrapped app work the same way as in-browser
+(`server/core/http.py`'s CORS allow-list already includes Capacitor's default
+WebView origins, `https://localhost` and `capacitor://localhost`), but
+`127.0.0.1` inside the app refers to the *phone itself*, not your computer —
+use your machine's LAN IP (server started with `--host 0.0.0.0`, which
+`python -m server.main` already does) or the Android emulator's special
+`10.0.2.2` alias for the host loopback.
 
 By default it runs on **demo data** — no server required. To see your actual
 backup data instead:
@@ -145,12 +182,14 @@ game/
       WaveDirector.tsx             invisible spawn/wave/boss-trigger logic (no visual)
       GlitchOverlay.tsx            escalating corruption effects + the crash/reboot screen
       Hud.tsx                     DOM overlay (rescued count, integrity, wave, boss HP, toasts)
+      TouchControls.tsx            on-screen joystick + buttons (touch or mouse) — essential
+                                    on a phone, harmless in a browser
       zones/
         Kiosk.tsx                  shared info-panel/pedestal building block
         DedupReef.tsx, CloudDocks.tsx, PortGate.tsx, Terminal.tsx,
         SystemVitals.tsx, KernelCore.tsx, SecurityBeacon.tsx, EarningsPlaza.tsx
     hooks/
-      useKeyboard.ts              input, as refs (no per-keypress re-renders)
+      useKeyboard.ts              wires keydown/up into state/inputState.ts's singleton
       useAudioCues.ts             synthesized SFX
     state/
       gameStore.ts                 rescue progress, toast, gadget cooldown
@@ -158,7 +197,14 @@ game/
       bugRegistry.ts               live bug *positions*, outside React state (attack hit-testing)
       activityLog.ts               the real event log the Terminal zone tails
       backendStore.ts              loaded backend data + connect/demo actions
+      inputState.ts                 shared input singleton — keyboard AND touch controls both
+                                    write into this one object, so RobotController doesn't
+                                    care which input source is active
       playerTransform.ts           per-frame mutable singletons (position/facing/camera
                                     shake) — deliberately outside React state; see the
                                     comment in the file for why.
+  android/, ios/                   Capacitor-generated native projects (committed) — see
+                                    "Android / iOS (Capacitor)" above; don't hand-edit
+                                    Capacitor-managed files, change the web app and `cap sync`
+  capacitor.config.ts               app id / name / web dir for the native wrapper
 ```

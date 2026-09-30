@@ -18,7 +18,12 @@ from urllib.parse import parse_qsl, urlsplit
 from server.core.config import Settings
 from server.core.database import get_db
 
-ALLOWED_ORIGINS = {"http://localhost:3100", "http://127.0.0.1:3100"}
+ALLOWED_ORIGINS = {
+    "http://localhost:3100", "http://127.0.0.1:3100",  # game/ dev server
+    "http://localhost:3200", "http://127.0.0.1:3200",  # mobile/ dev server
+    "https://localhost",  # Capacitor's default Android WebView origin
+    "capacitor://localhost",  # Capacitor's default iOS WebView origin
+}
 ALLOWED_METHODS = "GET, POST, OPTIONS"
 ALLOWED_HEADERS = "Authorization, Content-Type"
 

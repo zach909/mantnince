@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Backup Cloud</string>
+    <string name="title_activity_main">Backup Cloud</string>
+    <string name="package_name">com.mantnince.backupcloud</string>
+    <string name="custom_url_scheme">com.mantnince.backupcloud</string>
+</resources>

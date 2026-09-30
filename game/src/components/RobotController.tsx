@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useKeyboard, consumeEdge } from '../hooks/useKeyboard'
+import { useKeyboard } from '../hooks/useKeyboard'
+import { inputState, consumeEdge } from '../state/inputState'
 import { useAudioCues } from '../hooks/useAudioCues'
 import { useGameStore } from '../state/gameStore'
 import { useBugStore } from '../state/bugStore'
@@ -33,7 +34,7 @@ const JITTER_START = 55
 const JITTER_MAX_AT = 95
 
 export function RobotController() {
-  const keys = useKeyboard()
+  useKeyboard()
   const audio = useAudioCues()
   const useGadget = useGameStore((s) => s.useGadget)
   const isGadgetReady = useGameStore((s) => s.isGadgetReady)
@@ -81,7 +82,7 @@ export function RobotController() {
     // of just choppier motion at the correct speed.
     const delta = Math.min(rawDelta, 0.1)
     const t = state.clock.elapsedTime
-    const k = keys.current
+    const k = inputState
 
     // ── Horizontal input → damped velocity (gives movement real weight) ──
     let dirX = (k.right ? 1 : 0) - (k.left ? 1 : 0)
@@ -108,7 +109,7 @@ export function RobotController() {
     vel.current.z = THREE.MathUtils.damp(vel.current.z, dirZ * MOVE_SPEED, rate, delta)
 
     // ── Jump ──
-    if (grounded.current && consumeEdge(keys, 'jumpPressed')) {
+    if (grounded.current && consumeEdge('jumpPressed')) {
       vel.current.y = JUMP_SPEED
       grounded.current = false
       audio.playJump()
@@ -117,7 +118,7 @@ export function RobotController() {
     // ── Boost gadget: adds to current velocity, so combining it with a
     //    jump reaches much further than either alone (rewards "combine
     //    ability with normal movement," per the design spec). ──
-    if (consumeEdge(keys, 'boostPressed') && isGadgetReady()) {
+    if (consumeEdge('boostPressed') && isGadgetReady()) {
       vel.current.y += BOOST_UP_SPEED
       vel.current.x += playerFacing.x * BOOST_FORWARD_SPEED
       vel.current.z += playerFacing.z * BOOST_FORWARD_SPEED
@@ -129,7 +130,7 @@ export function RobotController() {
     }
 
     // ── Attack: a short-range swipe that damages any bug in range ──
-    if (consumeEdge(keys, 'attackPressed') && t >= attackReadyAt.current) {
+    if (consumeEdge('attackPressed') && t >= attackReadyAt.current) {
       attackReadyAt.current = t + ATTACK_COOLDOWN_MS / 1000
       attackFlashUntil.current = t + 0.18
       setAnim('attack', t)

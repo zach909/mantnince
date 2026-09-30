@@ -1,16 +1,5 @@
-import { useEffect, useRef } from 'react'
-
-export interface KeyState {
-  forward: boolean
-  back: boolean
-  left: boolean
-  right: boolean
-  jump: boolean
-  jumpPressed: boolean
-  boost: boolean
-  boostPressed: boolean
-  attackPressed: boolean
-}
+import { useEffect } from 'react'
+import { inputState } from '../state/inputState'
 
 const FORWARD = new Set(['KeyW', 'ArrowUp'])
 const BACK = new Set(['KeyS', 'ArrowDown'])
@@ -20,16 +9,13 @@ const JUMP = new Set(['Space'])
 const BOOST = new Set(['ShiftLeft', 'ShiftRight', 'KeyE'])
 const ATTACK = new Set(['KeyF'])
 
-/** Tracks held keys in a ref (no re-renders) plus one-frame "just pressed" edges for jump/boost/attack. */
+/** Wires keyboard events into the shared inputState singleton (see
+ * state/inputState.ts). Touch controls write into the same object, so
+ * RobotController just reads inputState regardless of input source. */
 export function useKeyboard() {
-  const state = useRef<KeyState>({
-    forward: false, back: false, left: false, right: false,
-    jump: false, jumpPressed: false, boost: false, boostPressed: false, attackPressed: false,
-  })
-
   useEffect(() => {
     function onDown(e: KeyboardEvent) {
-      const s = state.current
+      const s = inputState
       if (FORWARD.has(e.code)) s.forward = true
       if (BACK.has(e.code)) s.back = true
       if (LEFT.has(e.code)) s.left = true
@@ -39,7 +25,7 @@ export function useKeyboard() {
       if (ATTACK.has(e.code) && !e.repeat) s.attackPressed = true
     }
     function onUp(e: KeyboardEvent) {
-      const s = state.current
+      const s = inputState
       if (FORWARD.has(e.code)) s.forward = false
       if (BACK.has(e.code)) s.back = false
       if (LEFT.has(e.code)) s.left = false
@@ -54,13 +40,4 @@ export function useKeyboard() {
       window.removeEventListener('keyup', onUp)
     }
   }, [])
-
-  return state
-}
-
-/** Call once per frame after reading an edge flag, to consume it. */
-export function consumeEdge(state: React.MutableRefObject<KeyState>, key: 'jumpPressed' | 'boostPressed' | 'attackPressed') {
-  const value = state.current[key]
-  state.current[key] = false
-  return value
 }
